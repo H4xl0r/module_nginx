@@ -1,6 +1,6 @@
 <? 
 /*
-    Copyright (C) 2013-2015 xtr4nge [_AT_] gmail.com
+    Copyright (C) 2013-2020 xtr4nge [_AT_] gmail.com
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<title>FruityWifi</title>
+<title>FruityWifi : Nginx</title>
 <script src="../js/jquery.js"></script>
 <script src="../js/jquery-ui.js"></script>
 <link rel="stylesheet" href="../css/jquery-ui.css" />
@@ -85,15 +85,42 @@ include "includes/options_config.php";
 <div class="rounded-bottom">
 
     &nbsp;&nbsp;version <?=$mod_version?><br>
-    <?
+    
+<?
     $exec = $mod_isup;
     $ismoduleup = exec_fruitywifi($exec);
     if ($ismoduleup[0] != "") {
-        echo "&nbsp;&nbsp;&nbsp; $mod_alias  <font color=\"lime\"><b>enabled</b></font>.&nbsp; | <a href=\"includes/module_action.php?service=$mod_name&action=stop&page=module\"><b>stop</b></a>";
+        echo "&nbsp;&nbsp;&nbsp; $mod_alias <font color='lime'><b>enabled</b></font>.&nbsp; | <a href='includes/module_action.php?service=$mod_name&action=stop&page=module'><b>stop</b></a><br>";
     } else { 
-        echo "&nbsp;&nbsp;&nbsp; $mod_alias  <font color=\"red\"><b>disabled</b></font>. | <a href=\"includes/module_action.php?service=$mod_name&action=start&page=module\"><b>start</b></a>"; 
+        echo "&nbsp;&nbsp;&nbsp; $mod_alias <font color='red'><b>disabled</b></font>. | <a href='includes/module_action.php?service=$mod_name&action=start&page=module'><b>start</b></a><br>"; 
     }
-    ?>
+
+    if (file_exists($bin_captive)) { 
+		$ismoduleup = exec($mod_coisup);
+		$mod_coisupopen = exec($mod_coisupopen);
+    		if ($ismoduleup != "" OR $mod_coisupopen != "") {
+        		echo "&nbsp;<a href='/modules/captive' style='text-decoration: none;'> $mod_co </a><font color='lime'><b>enabled</b></font>.&nbsp; | <a href='/modules/captive/includes/module_action.php?service=captive&action=stop&page=module'><b>stop</b></a><br>";
+    		} else { 
+        		echo "&nbsp;<a href='/modules/captive' style='text-decoration: none;'> $mod_co </a><font color='red'><b>disabled</b></font>. | <a href='/modules/captive/includes/module_action.php?service=captive&action=start&page=module'><b>start</b></a><br>"; 
+    		}
+
+	if(file_exists($mod_coconf)){
+		if(file_exists("includes/vhost/vhost-captive.conf")){
+			echo "&nbsp; $mod_co Vhost <font color='lime'><b>enabled</b></font>.&nbsp; | <a href='includes/module_action.php?service=$mod_name&action=stopcapvhost&page=module'><b>stop</b></a><br>";
+		}else{
+        		echo "&nbsp; $mod_co Vhost <font color='red'><b>disabled</b></font>. | <a href='includes/module_action.php?service=$mod_name&action=startcapvhost&page=module'><b>start</b></a><br>"; 
+		}
+	}else{
+		echo "&nbsp; $mod_co Vhost <a href='includes/module_action.php?service=$mod_name&action=getcapvhost&page=module' style='color:red'>install</a><br>"; 
+
+	}
+    } else {
+        echo "&nbsp; $mod_alias <a href='/page_modules.php?show' style='color:red'>install</a><br>";
+    } 
+
+
+
+?>
   
 </div>
 
@@ -102,9 +129,9 @@ include "includes/options_config.php";
 <div class="rounded-bottom">
     <?
     if ($mod_nginx_fpm == "php7") {
-        echo "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; FPM  [ <a href='includes/module_action.php?php_fpm=php5'>PHP5</a> | <font color='black'><b>PHP7</b></font> ]";
+        echo "&nbsp; FPM  [ <a href='includes/module_action.php?php_fpm=php5'>PHP5</a> | <font color='black'><b>PHP7</b></font> ]";
     } else { 
-        echo "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; FPM  [ <font color='black'><b>PHP5</b></font> | <a href='includes/module_action.php?php_fpm=php7'>PHP7</a> ]"; 
+        echo "&nbsp; FPM  [ <font color='black'><b>PHP5</b></font> | <a href='includes/module_action.php?php_fpm=php7'>PHP7</a> ]"; 
     }
     ?>
     
