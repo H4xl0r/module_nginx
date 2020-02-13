@@ -1,6 +1,6 @@
 <? 
 /*
-    Copyright (C) 2013-2015 xtr4nge [_AT_] gmail.com
+    Copyright (C) 2013-2020 xtr4nge [_AT_] gmail.com
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -22,7 +22,6 @@ include "../../../config/config.php";
 include "../_info_.php";
 include "../../../functions.php";
 
-//include "options_config.php";
 
 // Checking POST & GET variables...
 if ($regex == 1) {
@@ -62,13 +61,15 @@ if($service == $mod_name) {
         if ( 0 < filesize( $mod_logs ) ) {
             $exec = "cp $mod_logs $mod_logs_history/".gmdate("Ymd-H-i-s").".log";
             exec_fruitywifi($exec);
-            
             $exec = "echo '' > $mod_logs";
             exec_fruitywifi($exec);
         }
-		
+
+	if(file_exists("vhost/vhost-captive.conf")){
 		if ($mod_nginx_fpm == "php7") {
-			$exec = "cp vhost-php7.conf vhost/FruityWiFi-www";
+			$exec = "cp vhost-captive.conf vhost";
+			exec_fruitywifi($exec);
+			$exec = "cp hotspot-detect.html /var/www/";
 			exec_fruitywifi($exec);
 			
 			if (!file_exists("/etc/php/7.0/fpm/pool.d/80.conf") or !file_exists("/etc/php/7.0/fpm/pool.d/443.conf")) {
@@ -82,7 +83,9 @@ if($service == $mod_name) {
 				exec_fruitywifi($exec);
 			}
 		} else {
-			$exec = "cp vhost-php5.conf vhost/FruityWiFi-www";
+			$exec = "cp vhost-captive.conf vhost";	
+			exec_fruitywifi($exec);
+			$exec = "cp hotspot-detect.html /var/www/";
 			exec_fruitywifi($exec);
 			
 			if (!file_exists("/etc/php5/fpm/pool.d/80.conf") or !file_exists("/etc/php5/fpm/pool.d/443.conf")) {
@@ -99,7 +102,42 @@ if($service == $mod_name) {
 		
 		$exec = "$bin_nginx -c /usr/share/fruitywifi/www/modules/nginx/includes/nginx.conf";
         exec_fruitywifi($exec);
+	}else{
 		
+		if ($mod_nginx_fpm == "php7") {
+			$exec = "cp vhost-php7.conf vhost";
+			exec_fruitywifi($exec);
+			
+			if (!file_exists("/etc/php/7.0/fpm/pool.d/80.conf") or !file_exists("/etc/php/7.0/fpm/pool.d/443.conf")) {
+				$exec = "cp php7-fpm/80.conf /etc/php/7.0/fpm/pool.d/";
+				exec_fruitywifi($exec);
+				$exec = "cp php7-fpm/443.conf /etc/php/7.0/fpm/pool.d/";
+				exec_fruitywifi($exec);
+				$exec = "$php7_fpm -y /etc/php/7.0/fpm/pool.d/80.conf";
+				exec_fruitywifi($exec);
+				$exec = "$php7_fpm -y /etc/php/7.0/fpm/pool.d/443.conf";
+				exec_fruitywifi($exec);
+			}
+		} else {
+			$exec = "cp vhost-php5.conf vhost";	
+			exec_fruitywifi($exec);
+			
+			if (!file_exists("/etc/php5/fpm/pool.d/80.conf") or !file_exists("/etc/php5/fpm/pool.d/443.conf")) {
+				$exec = "cp php5-fpm/80.conf /etc/php5/fpm/pool.d/";
+				exec_fruitywifi($exec);
+				$exec = "cp php5-fpm/443.conf /etc/php5/fpm/pool.d/";
+				exec_fruitywifi($exec);
+				$exec = "$php5_fpm -y /etc/php5/fpm/pool.d/80.conf";
+				exec_fruitywifi($exec);
+				$exec = "$php5_fpm -y /etc/php5/fpm/pool.d/443.conf";
+				exec_fruitywifi($exec);
+			}
+		}
+		
+		$exec = "$bin_nginx -c /usr/share/fruitywifi/www/modules/nginx/includes/nginx.conf";
+        exec_fruitywifi($exec);
+	}
+        
     } else if($action == "stop") {
 	
 		// STOP MODULE
@@ -118,8 +156,157 @@ if($service == $mod_name) {
             exec_fruitywifi($exec);
         }
 	
-    }
+    }else if($action == "startcapvhost"){
+	$ismoduleup = exec_fruitywifi($mod_isup);
+	if($ismoduleup[0] !=""){
+	// STOP MODULE
+		$exec = "ps aux|grep -E 'nginx.+/modules/nginx/includes/nginx.conf' | grep -v grep | awk '{print $2}'";
+		exec($exec,$output);
+		
+		$exec = "kill " . $output[0];
+		exec_fruitywifi($exec);
+	
+	//Clean Vhost
+		$exec = "rm -r vhost/*";
+		exec_fruitywifi($exec);
 
+		$exec = "rm /var/www/hotspot-detect.html";
+		exec_fruitywifi($exec);
+
+
+	//Add New Vhosts
+		$exec = "cp vhost-captive.conf vhost";
+		exec_fruitywifi($exec);
+
+		$exec = "cp hotspot-detect.html /var/www/";
+		exec_fruitywifi($exec);
+
+	//Restart
+		$exec = "$bin_nginx -c /usr/share/fruitywifi/www/modules/nginx/includes/nginx.conf";
+        exec_fruitywifi($exec);
+
+	}else{
+		//Clean Vhost
+		$exec = "rm -r vhost/*";
+		exec_fruitywifi($exec);
+
+		$exec = "rm /var/www/hotspot-detect.html";
+		exec_fruitywifi($exec);
+
+		//Add New Vhosts
+		$exec = "cp vhost-captive.conf vhost";
+		exec_fruitywifi($exec);
+
+		$exec = "cp hotspot-detect.html /var/www/";
+		exec_fruitywifi($exec);
+		}
+	}else if($action == "stopcapvhost"){
+        
+        $ismoduleup = exec_fruitywifi($mod_isup);
+	   if($ismoduleup[0] !=""){
+		// STOP MODULE
+		$exec = "ps aux|grep -E 'nginx.+/modules/nginx/includes/nginx.conf' | grep -v grep | awk '{print $2}'";
+		exec($exec,$output);
+		
+		$exec = "kill " . $output[0];
+		exec_fruitywifi($exec);
+
+		//Clean Vhost
+		$exec = "rm -r vhost/*";
+		exec_fruitywifi($exec);
+
+		$exec = "rm /var/www/hotspot-detect.html";
+		exec_fruitywifi($exec);
+
+		
+		if ($mod_nginx_fpm == "php7") {
+			$exec = "cp vhost-php7.conf vhost";
+			exec_fruitywifi($exec);
+			
+			if (!file_exists("/etc/php/7.0/fpm/pool.d/80.conf") or !file_exists("/etc/php/7.0/fpm/pool.d/443.conf")) {
+				$exec = "cp php7-fpm/80.conf /etc/php/7.0/fpm/pool.d/";
+				exec_fruitywifi($exec);
+				$exec = "cp php7-fpm/443.conf /etc/php/7.0/fpm/pool.d/";
+				exec_fruitywifi($exec);
+				$exec = "$php7_fpm -y /etc/php/7.0/fpm/pool.d/80.conf";
+				exec_fruitywifi($exec);
+				$exec = "$php7_fpm -y /etc/php/7.0/fpm/pool.d/443.conf";
+				exec_fruitywifi($exec);
+			}
+		} else {
+			$exec = "cp vhost-php5.conf vhost";	
+			exec_fruitywifi($exec);
+			
+			if (!file_exists("/etc/php5/fpm/pool.d/80.conf") or !file_exists("/etc/php5/fpm/pool.d/443.conf")) {
+				$exec = "cp php5-fpm/80.conf /etc/php5/fpm/pool.d/";
+				exec_fruitywifi($exec);
+				$exec = "cp php5-fpm/443.conf /etc/php5/fpm/pool.d/";
+				exec_fruitywifi($exec);
+				$exec = "$php5_fpm -y /etc/php5/fpm/pool.d/80.conf";
+				exec_fruitywifi($exec);
+				$exec = "$php5_fpm -y /etc/php5/fpm/pool.d/443.conf";
+				exec_fruitywifi($exec);
+			}
+		}
+		
+		$exec = "$bin_nginx -c /usr/share/fruitywifi/www/modules/nginx/includes/nginx.conf";
+        	exec_fruitywifi($exec);
+
+		}else{
+		$exec = "kill " . $output[0];
+		exec_fruitywifi($exec);
+
+		//Clean Vhost
+		$exec = "rm -r vhost/*";
+		exec_fruitywifi($exec);
+
+		$exec = "rm /var/www/hotspot-detect.html";
+		exec_fruitywifi($exec);
+
+
+		if ($mod_nginx_fpm == "php7") {
+			$exec = "cp vhost-php7.conf vhost";
+			exec_fruitywifi($exec);
+			
+			if (!file_exists("/etc/php/7.0/fpm/pool.d/80.conf") or !file_exists("/etc/php/7.0/fpm/pool.d/443.conf")) {
+				$exec = "cp php7-fpm/80.conf /etc/php/7.0/fpm/pool.d/";
+				exec_fruitywifi($exec);
+				$exec = "cp php7-fpm/443.conf /etc/php/7.0/fpm/pool.d/";
+				exec_fruitywifi($exec);
+				$exec = "$php7_fpm -y /etc/php/7.0/fpm/pool.d/80.conf";
+				exec_fruitywifi($exec);
+				$exec = "$php7_fpm -y /etc/php/7.0/fpm/pool.d/443.conf";
+				exec_fruitywifi($exec);
+			}
+			} else {
+			$exec = "cp vhost-php5.conf vhost";
+			exec_fruitywifi($exec);
+			
+			if (!file_exists("/etc/php5/fpm/pool.d/80.conf") or !file_exists("/etc/php5/fpm/pool.d/443.conf")) {
+				$exec = "cp php5-fpm/80.conf /etc/php5/fpm/pool.d/";
+				exec_fruitywifi($exec);
+				$exec = "cp php5-fpm/443.conf /etc/php5/fpm/pool.d/";
+				exec_fruitywifi($exec);
+				$exec = "$php5_fpm -y /etc/php5/fpm/pool.d/80.conf";
+				exec_fruitywifi($exec);
+				$exec = "$php5_fpm -y /etc/php5/fpm/pool.d/443.conf";
+				exec_fruitywifi($exec);
+			}
+		}
+	}
+	}else if($action == "getcapvhost"){
+		if(file_exists("/usr/share/fruitywifi/www/modules/captive/includes/vhost-captive.conf")){
+		$exec = "cp /usr/share/fruitywifi/www/modules/captive/includes/vhost-captive.conf $mod_coconf";
+		exec_fruitywifi($exec);
+		
+		if(file_exists("/usr/share/fruitywifi/www/modules/captive/includes/hotspot-detect.html")){
+		$exec = "cp /usr/share/fruitywifi/www/modules/captive/includes/hotspot-detect.html /usr/share/fruitywifi/www/modules/nginx/includes/hotspot-detect.html";
+		exec_fruitywifi($exec);
+
+		}
+
+		}
+	}
 }
 
 if ($install == "install_$mod_name") {
